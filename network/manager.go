@@ -209,14 +209,12 @@ func (m *Manager) init() {
 	}()
 
 	// initialize device and connection handlers
-
+	m.stateHandler = newStateHandler(m.sysSigLoop, m)
+	m.initSysNetwork(systemBus)
 	m.initConnectionManage()
 	m.initDeviceManage()
 	m.initActiveConnectionManage()
 	m.initNMObjManager(systemBus)
-	m.initSysNetwork(systemBus)
-
-	m.stateHandler = newStateHandler(m.sysSigLoop, m)
 
 	// update property "State"
 	err = nmManager.State().ConnectChanged(func(hasValue bool, value uint32) {

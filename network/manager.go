@@ -209,12 +209,14 @@ func (m *Manager) init() {
 	}()
 
 	// initialize device and connection handlers
-	m.stateHandler = newStateHandler(m.sysSigLoop, m)
-	m.initSysNetwork(systemBus)
+	m.sysNetwork = sysNetwork.NewNetwork(systemBus)
 	m.initConnectionManage()
 	m.initDeviceManage()
 	m.initActiveConnectionManage()
 	m.initNMObjManager(systemBus)
+	m.stateHandler = newStateHandler(m.sysSigLoop, m)
+	m.initSysNetwork(systemBus)
+
 
 	// update property "State"
 	err = nmManager.State().ConnectChanged(func(hasValue bool, value uint32) {
@@ -318,7 +320,6 @@ func watchNetworkManagerRestart(m *Manager) {
 }
 
 func (m *Manager) initSysNetwork(sysBus *dbus.Conn) {
-	m.sysNetwork = sysNetwork.NewNetwork(sysBus)
 	m.sysNetwork.InitSignalExt(m.sysSigLoop, true)
 	err := common.ActivateSysDaemonService(m.sysNetwork.ServiceName_())
 	if err != nil {
@@ -326,10 +327,6 @@ func (m *Manager) initSysNetwork(sysBus *dbus.Conn) {
 	}
 
 	_, err = m.sysNetwork.ConnectDeviceEnabled(func(devPath dbus.ObjectPath, enabled bool) {
-		// sync device enable state
-		if dev := m.getDevice(devPath); dev != nil {
-			dev.Enable = enabled
-		}
 		err := m.service.Emit(manager, "DeviceEnabled", string(devPath), enabled)
 		if err != nil {
 			logger.Warning(err)

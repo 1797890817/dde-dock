@@ -205,16 +205,19 @@ func (m *Manager) IsUsernameValid(sender dbus.Sender, name string) (valid bool,
 	var err error
 	defer func() {
 		busErr = dbusutil.ToError(err)
+		logger.Debugf("IsUsernameValid end, valid: %v, msg: %s, code: %v", valid, msg, code)
 	}()
 
 	pid, err := m.service.GetConnPID(string(sender))
 	if err != nil {
+		logger.Debugf("get pid failed, err: %v", err)
 		return
 	}
 
 	p := procfs.Process(pid)
 	environ, err := p.Environ()
 	if err != nil {
+		logger.Debugf("get env failed, err: %v", err)
 		return
 	}
 
@@ -222,6 +225,7 @@ func (m *Manager) IsUsernameValid(sender dbus.Sender, name string) (valid bool,
 
 	info := checkers.CheckUsernameValid(name)
 	if info == nil {
+		logger.Debug("get info is nil")
 		valid = true
 		return
 	}
@@ -231,6 +235,8 @@ func (m *Manager) IsUsernameValid(sender dbus.Sender, name string) (valid bool,
 	if locale != "" {
 		gettext.SetLocale(gettext.LcAll, locale)
 		msg = gettext.Tr(msg)
+	} else {
+		logger.Debug("get local is nil")
 	}
 	code = int32(info.Code)
 	return
